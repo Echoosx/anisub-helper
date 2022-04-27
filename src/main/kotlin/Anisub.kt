@@ -4,16 +4,14 @@ import kotlinx.coroutines.launch
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
-import net.mamoe.mirai.console.plugin.name
 import net.mamoe.mirai.event.GlobalEventChannel
 import net.mamoe.mirai.event.events.BotOnlineEvent
-import net.mamoe.mirai.message.data.buildMessageChain
 import net.mamoe.mirai.utils.info
-import org.echoosx.mirai.plugin.Config.interval
-import org.echoosx.mirai.plugin.Config.rssPrefix
+import org.echoosx.mirai.plugin.AnisubConfig.interval
+import org.echoosx.mirai.plugin.AnisubConfig.rssPrefix
 import org.echoosx.mirai.plugin.command.SubscribeManage
-import org.echoosx.mirai.plugin.data.Subscribe
-import org.echoosx.mirai.plugin.data.Subscribe.record
+import org.echoosx.mirai.plugin.data.AnisubSubscribe
+import org.echoosx.mirai.plugin.data.AnisubSubscribe.record
 import util.buildMessage
 import util.checkUpdate
 import util.getLatestChapter
@@ -25,7 +23,7 @@ object Anisub : KotlinPlugin(
     JvmPluginDescription(
         id = "org.echoosx.mirai.plugin.anisub-helper",
         name = "anisub-helper",
-        version = "0.1.0"
+        version = "0.1.3"
     ) {
         author("Echoosx")
     }
@@ -34,8 +32,8 @@ object Anisub : KotlinPlugin(
         logger.info { "Plugin loaded" }
         //配置文件目录 "${dataFolder.absolutePath}/"
 
-        Subscribe.reload()
-        Config.reload()
+        AnisubSubscribe.reload()
+        AnisubConfig.reload()
         SubscribeManage.register()
 
         val eventChannel = GlobalEventChannel.parentScope(this)
@@ -48,12 +46,13 @@ object Anisub : KotlinPlugin(
                             if(checkUpdate(rssUrl, it.value.latest)){
                                 val bangumi = getLatestChapter(rssUrl)
                                 val message = buildMessage(bangumi)
-                                it.value.contacts.forEach{ it->
+                                it.value.contacts.forEach{
                                     val contact = bot.getGroup(it)
                                     contact?.sendMessage(message)
                                 }
                                 it.value.latest = bangumi.chapterLink!!
                                 it.value.updateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("EE yyyy/MM/dd HH:mm",Locale.CHINA))
+//                                logger.info(connectHttpGet(rssUrl))
                             }
                         }
                     }
@@ -65,6 +64,5 @@ object Anisub : KotlinPlugin(
                 logger.error("AGE番剧订阅获取失败\n$e")
             }
         }
-
     }
 }
