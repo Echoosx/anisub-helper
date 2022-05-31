@@ -18,5 +18,5 @@ object AnisubConfig : AutoSavePluginConfig("Config"){
     val timeout:Long by value(30L)
 
     @ValueDescription("轮询间隔(min)")
-    val interval:Long by value(10L)
+    val interval:Int by value(10)
 }

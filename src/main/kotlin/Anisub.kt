@@ -4,6 +4,7 @@ import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.utils.info
+import org.echoosx.mirai.plugin.AnisubConfig.interval
 import org.echoosx.mirai.plugin.command.SubscribeManage
 import org.echoosx.mirai.plugin.data.AnisubSubscribe
 import org.echoosx.mirai.plugin.util.Subscribe
@@ -35,7 +36,7 @@ object Anisub : KotlinPlugin(
         val trigger = TriggerBuilder.newTrigger()
             .withSchedule(
                 SimpleScheduleBuilder.simpleSchedule()
-                    .withIntervalInSeconds(60)
+                    .withIntervalInSeconds(interval * 60)
                     .repeatForever()
             )
             .startNow()
