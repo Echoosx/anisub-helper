@@ -51,7 +51,8 @@ fun connectHttpGet(url: String) :String {
 }
 
 fun getLatestChapter(rssUrl:String):Bangumi{
-    val document = getXml(rssUrl)
+    val document = getXml(rssUrl,debug = true)
+    Anisub.logger.info("getLatestChapter:"+document.text)
     val bangumi = Bangumi()
     bangumi.bangumiTitle = document.selectSingleNode("//channel/title").text
     bangumi.bangumiDesc = document.selectSingleNode("//channel/description").text
@@ -68,9 +69,10 @@ fun getLatestChapter(rssUrl:String):Bangumi{
     return bangumi
 }
 
-fun getXml(rssUrl: String): Document {
+fun getXml(rssUrl: String,debug:Boolean = false): Document {
     val xml = connectHttpGet(rssUrl)
-
+    if(debug)
+        Anisub.logger.info(xml)
     val xmlMap = HashMap<String, String>()
     xmlMap["atom"] = "http://www.w3.org/2005/Atom"
 
@@ -83,8 +85,8 @@ fun checkUpdate(rssUrl: String, latest: String):Boolean{
     val document = getXml(rssUrl)
     val newLink = document.selectSingleNode("//channel/item/link").text
     if(newLink != latest){
-        Anisub.logger.info(newLink)
-        Anisub.logger.info(latest)
+        Anisub.logger.info("old:'${latest}'")
+        Anisub.logger.info("new:'${newLink}'")
     }
     return newLink != latest
 }

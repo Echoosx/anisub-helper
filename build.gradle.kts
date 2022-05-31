@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "org.echoosx"
-version = "0.1.3"
+version = "0.1.4"
 
 repositories {
     maven("https://maven.aliyun.com/repository/public") // 阿里云国内代理仓库
@@ -17,4 +17,5 @@ repositories {
 dependencies{
     implementation("dom4j:dom4j:1.6.1")
     implementation("jaxen:jaxen:1.2.0")
+    implementation("org.quartz-scheduler:quartz:2.3.2")
 }
