@@ -10,14 +10,12 @@ import net.mamoe.mirai.console.data.value
 data class SubscribeRecord(
     @SerialName("name")
     var name: String = "",
-    @SerialName("latest")
-    var latest: String = "",
     @SerialName("update")
     var updateTime:String = "",
     @SerialName("contact")
     var contacts: MutableList<Long> = arrayListOf(),
     @SerialName("chapterList")
-    var chapterList: MutableSet<Long> = mutableSetOf(),
+    var chapterList: MutableSet<String> = mutableSetOf(),
 )
 
 object AnisubSubscribe : AutoSavePluginData("Subscribe") {

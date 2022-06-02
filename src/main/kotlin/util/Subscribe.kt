@@ -33,17 +33,16 @@ internal class Subscribe : Job {
     private fun Bot.subscribe() = Anisub.launch {
         record.forEach {
             val rssUrl = rssPrefix + it.key
-            if(checkUpdate(rssUrl, it.value.latest)){
+            if(checkUpdate(rssUrl, it.value)){
                 val bangumi = getLatestChapter(rssUrl)
                 val message = buildMessage(bangumi)
                 it.value.contacts.forEach{ id->
                     val contact = bot.getGroupOrFail(id)
                     contact.sendMessage(message)
                 }
-                it.value.latest = bangumi.chapterLink!!
+                it.value.chapterList.add(bangumi.chapterLink!!)
                 it.value.updateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("EE yyyy/MM/dd HH:mm",
                     Locale.CHINA))
-                logger.info("now:'${it.value.latest}'")
             }
         }
     }

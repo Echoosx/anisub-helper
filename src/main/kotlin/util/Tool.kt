@@ -10,6 +10,7 @@ import org.echoosx.mirai.plugin.Anisub
 import org.echoosx.mirai.plugin.AnisubConfig.host
 import org.echoosx.mirai.plugin.AnisubConfig.port
 import org.echoosx.mirai.plugin.AnisubConfig.timeout
+import org.echoosx.mirai.plugin.data.SubscribeRecord
 import org.xml.sax.InputSource
 import java.io.IOException
 import java.io.StringReader
@@ -26,7 +27,11 @@ class Bangumi{
     var chapterLink:String? = null
 }
 
-// Http Get方法
+/**
+ * http get方法
+ * @param url 链接
+ * @return get返回值字符串
+ */
 fun connectHttpGet(url: String) :String {
     var result = ""
     val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port))
@@ -50,6 +55,12 @@ fun connectHttpGet(url: String) :String {
     return result
 }
 
+
+/**
+ * 根据链接获取最新话
+ * @param rssUrl 番剧rss链接
+ * @return 包含最新话所有信息的Bangumi实例
+ */
 fun getLatestChapter(rssUrl:String):Bangumi{
     val document = getXml(rssUrl,debug = true)
     Anisub.logger.info("getLatestChapter:"+document.text)
@@ -69,6 +80,13 @@ fun getLatestChapter(rssUrl:String):Bangumi{
     return bangumi
 }
 
+
+/**
+ * 根据链接获取xml
+ * @param rssUrl 番剧rss链接
+ * @param debug 是否开启debug输出
+ * @return xml document
+ */
 fun getXml(rssUrl: String,debug:Boolean = false): Document {
     val xml = connectHttpGet(rssUrl)
     if(debug)
@@ -81,16 +99,24 @@ fun getXml(rssUrl: String,debug:Boolean = false): Document {
     return reader.read(InputSource(StringReader(xml)))
 }
 
-fun checkUpdate(rssUrl: String, latest: String):Boolean{
+/**
+ * 检查番剧是否更新
+ * @param rssUrl 番剧rss链接
+ * @param record 番剧更新记录
+ * @return true更新 false未更新
+ */
+fun checkUpdate(rssUrl: String, record:SubscribeRecord):Boolean{
     val document = getXml(rssUrl)
     val newLink = document.selectSingleNode("//channel/item/link").text
-    if(newLink != latest){
-        Anisub.logger.info("old:'${latest}'")
-        Anisub.logger.info("new:'${newLink}'")
-    }
-    return newLink != latest
+    return newLink !in record.chapterList
 }
 
+
+/**
+ * 格式化输出更新内容
+ * @param bangumi 番剧最新话信息
+ * @return 格式化内容
+ */
 fun buildMessage(bangumi:Bangumi):MessageChain{
     val message = buildMessageChain {
         appendLine("《${bangumi.bangumiTitle}》更新啦！")

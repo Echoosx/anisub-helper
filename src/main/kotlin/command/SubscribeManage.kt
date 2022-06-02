@@ -19,6 +19,13 @@ object SubscribeManage:CompositeCommand(
     "anisub","age",
 ) {
     private val logger get() = Anisub.logger
+
+    /**
+     * 增加订阅
+     * @param channelId 频道id
+     * @param group 群号
+     * @return
+     */
     @Suppress("unused")
     @SubCommand("add","subscribe","订阅")
     suspend fun CommandSender.add(channelId:String, group: Group = subject as Group){
@@ -35,7 +42,7 @@ object SubscribeManage:CompositeCommand(
             }else{
                 val subscribe = SubscribeRecord()
                 subscribe.name = bangumi.bangumiTitle!!
-                subscribe.latest = bangumi.chapterLink!!
+                subscribe.chapterList.add(bangumi.chapterLink!!)
                 subscribe.contacts = arrayListOf(group.id)
                 record[channelId] = subscribe
             }
@@ -48,6 +55,13 @@ object SubscribeManage:CompositeCommand(
         }
     }
 
+
+    /**
+     * 取消订阅
+     * @param channelId 频道id
+     * @param group 群号
+     * @return
+     */
     @Suppress("unused")
     @SubCommand("remove","rm","退订")
     suspend fun CommandSender.remove(channelId:String,group:Group = subject as Group){
@@ -65,6 +79,12 @@ object SubscribeManage:CompositeCommand(
         }
     }
 
+
+    /**
+     * 获取番剧订阅列表
+     * @param group 群号
+     * @return
+     */
     @Suppress("unused")
     @SubCommand("list","ls","列表")
     suspend fun CommandSender.list(group: Group = subject as Group){
@@ -92,6 +112,12 @@ object SubscribeManage:CompositeCommand(
         }
     }
 
+
+    /**
+     * 获取最新话
+     * @param args 关键字
+     * @return
+     */
     @Suppress("unused")
     @SubCommand("latest","最新")
     suspend fun CommandSender.latest(vararg args: String){
@@ -159,6 +185,13 @@ object SubscribeManage:CompositeCommand(
         }
     }
 
+
+    /**
+     * 格式化生成更新内容
+     * @param bangumi 频道内容
+     * @param channelId 频道id
+     * @return 格式化消息
+     */
     private fun latestChapterMessage(bangumi: Bangumi,channelId:String):MessageChain{
         val message = buildMessageChain {
             appendLine("《${bangumi.bangumiTitle}》:")
