@@ -211,9 +211,11 @@ object SubscribeManage:CompositeCommand(
             if(!thumbnail.exists()){
                 downloadThumbnail(channelId)
             }
-            contact.uploadImage(thumbnail.toExternalResource()).imageId.apply {
+            val resource = thumbnail.toExternalResource()
+            contact.uploadImage(resource).imageId.apply {
                 append(Image(this))
             }
+            resource.close()
             appendLine("《${bangumi.bangumiTitle}》")
             appendLine("最新话：${bangumi.chapterTitle}")
             if(bangumi.chapterDesc != null)
