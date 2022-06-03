@@ -1,12 +1,11 @@
 package org.echoosx.mirai.plugin.command
 
+import io.ktor.client.request.*
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CompositeCommand
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Group
-import net.mamoe.mirai.message.data.Image
-import net.mamoe.mirai.message.data.MessageChain
-import net.mamoe.mirai.message.data.buildMessageChain
+import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import org.echoosx.mirai.plugin.Anisub
 import org.echoosx.mirai.plugin.Anisub.dataFolder
@@ -14,6 +13,7 @@ import org.echoosx.mirai.plugin.AnisubConfig.rssPrefix
 import org.echoosx.mirai.plugin.data.AnisubSubscribe.record
 import org.echoosx.mirai.plugin.data.SubscribeRecord
 import org.echoosx.mirai.plugin.util.StringCompareUtil
+import org.echoosx.mirai.plugin.util.searchChannel
 import util.*
 import java.io.File
 import java.math.BigDecimal
@@ -154,7 +154,42 @@ object SubscribeManage:CompositeCommand(
                 }
 
                 if(matchList.size == 0){
-                    sendMessage("没有查询到关键字【${channelOrKeyword}】")
+                    val result = searchChannel(channelOrKeyword)
+                    if(result.size == 1){
+                        val channelId = result.first().channelId
+                        val bangumi = getLatestChapter(rssPrefix + result.first().channelId)
+                        sendMessage(latestChapterMessage(bangumi,channelId!!,subject!!))
+                    }else if(result.size > 1){
+                        val forward: ForwardMessage = buildForwardMessage(subject!!) {
+                            add(bot!!.id,bot!!.nick,PlainText("搜索到以下番剧："))
+                            result.forEach { channel ->
+                                val resource = httpClient.get<ByteArray>(channel.thumbnailUrl!!).toExternalResource()
+                                val thumbnail = subject?.uploadImage(resource)
+                                add(bot!!.id,bot!!.nick, buildMessageChain {
+                                    append(thumbnail!!)
+                                    append("\n名称：${channel.channelTitle}")
+                                    append("\n番剧编号：${channel.channelId}")
+                                    for(info in channel.channelInfo){
+                                        append("\n${info.first}${info.second}")
+                                    }
+                                })
+                            }
+                        }
+
+                        val render = ForwardMessage(
+                            preview = forward.preview,
+                            title = "AGE番剧搜索结果",
+                            brief = forward.brief,
+                            source = forward.source,
+                            summary = forward.summary,
+                            nodeList = forward.nodeList
+                        )
+                        sendMessage(render)
+                    }else{
+                        sendMessage("没有搜索到对应的番剧")
+                    }
+
+
                 }else if(matchList.size == 1){
                     val channelId = matchList[0].channelId
                     val bangumi = getLatestChapter(rssPrefix + channelId)
@@ -194,6 +229,54 @@ object SubscribeManage:CompositeCommand(
             }
         }catch (e:Throwable){
             sendMessage("获取失败")
+            logger.error(e)
+        }
+    }
+
+
+    /**
+     * 通过关键字搜索番剧
+     * @param args 关键字
+     * @return
+     */
+    @Suppress("unused")
+    @SubCommand("search","搜索")
+    suspend fun CommandSender.search(vararg args: String){
+        try{
+            val keyword = args.joinToString(" ")
+            val result = searchChannel(keyword)
+            if(result.size > 0){
+                val forward: ForwardMessage = buildForwardMessage(subject!!) {
+                    add(bot!!.id,bot!!.nick,PlainText("搜索到以下番剧："))
+                    result.forEach { channel ->
+                        val resource = httpClient.get<ByteArray>(channel.thumbnailUrl!!).toExternalResource()
+                        val thumbnail = subject?.uploadImage(resource)
+                        add(bot!!.id,bot!!.nick, buildMessageChain {
+                            append(thumbnail!!)
+                            append("\n名称：${channel.channelTitle}")
+                            append("\n番剧编号：${channel.channelId}")
+                            for(info in channel.channelInfo){
+                                append("\n${info.first}${info.second}")
+                            }
+                        })
+                    }
+                }
+
+                val render = ForwardMessage(
+                    preview = forward.preview,
+                    title = "AGE番剧搜索结果",
+                    brief = forward.brief,
+                    source = forward.source,
+                    summary = forward.summary,
+                    nodeList = forward.nodeList
+                )
+                sendMessage(render)
+            }else{
+                sendMessage("没有搜索到对应的番剧")
+            }
+
+        }catch (e:Throwable){
+            sendMessage("搜索失败")
             logger.error(e)
         }
     }
