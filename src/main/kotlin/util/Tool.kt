@@ -1,5 +1,9 @@
 package util
 
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.request.*
+import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.buildMessageChain
 import okhttp3.OkHttpClient
@@ -11,12 +15,20 @@ import org.echoosx.mirai.plugin.AnisubConfig.host
 import org.echoosx.mirai.plugin.AnisubConfig.port
 import org.echoosx.mirai.plugin.AnisubConfig.timeout
 import org.echoosx.mirai.plugin.data.SubscribeRecord
+import org.jsoup.Jsoup
 import org.xml.sax.InputSource
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.StringReader
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
+
+
+internal const val CHANNEL_PREFIX = "https://www.agefans.cc/play/"
+internal val httpClient = HttpClient(OkHttp)
+internal val logger get() = Anisub.logger
 
 class Bangumi{
     var bangumiTitle:String? = null
@@ -50,7 +62,7 @@ fun connectHttpGet(url: String) :String {
         val response = call.execute()
         result = response.body?.string().toString()
     } catch (e: IOException) {
-        Anisub.logger.error(e)
+        logger.error(e)
     }
     return result
 }
@@ -62,8 +74,7 @@ fun connectHttpGet(url: String) :String {
  * @return 包含最新话所有信息的Bangumi实例
  */
 fun getLatestChapter(rssUrl:String):Bangumi{
-    val document = getXml(rssUrl,debug = true)
-    Anisub.logger.info("getLatestChapter:"+document.text)
+    val document = getXml(rssUrl,debug = false)
     val bangumi = Bangumi()
     bangumi.bangumiTitle = document.selectSingleNode("//channel/title").text
     bangumi.bangumiDesc = document.selectSingleNode("//channel/description").text
@@ -90,7 +101,7 @@ fun getLatestChapter(rssUrl:String):Bangumi{
 fun getXml(rssUrl: String,debug:Boolean = false): Document {
     val xml = connectHttpGet(rssUrl)
     if(debug)
-        Anisub.logger.info(xml)
+        logger.info(xml)
     val xmlMap = HashMap<String, String>()
     xmlMap["atom"] = "http://www.w3.org/2005/Atom"
 
@@ -117,8 +128,9 @@ fun checkUpdate(rssUrl: String, record:SubscribeRecord):Boolean{
  * @param bangumi 番剧最新话信息
  * @return 格式化内容
  */
-fun buildMessage(bangumi:Bangumi):MessageChain{
+fun buildMessage(bangumi:Bangumi,imageId:String):MessageChain{
     val message = buildMessageChain {
+        append(Image(imageId))
         appendLine("《${bangumi.bangumiTitle}》更新啦！")
         appendLine("标题：${bangumi.chapterTitle}")
         if(bangumi.chapterDesc != null){
@@ -127,4 +139,32 @@ fun buildMessage(bangumi:Bangumi):MessageChain{
         append("链接：${bangumi.chapterLink}")
     }
     return message
+}
+
+
+/**
+ * 获取番剧封面
+ * @param url 番剧页面链接
+ * @return 封面url
+ */
+fun getThumbnail(url:String):String{
+    val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port))
+    val document: org.jsoup.nodes.Document = Jsoup.connect(url)
+        .proxy(proxy)
+        .timeout(30_000)
+        .get()
+
+    return document.select("img#play_poster_img").attr("src")
+}
+
+
+/**
+ * 下载番剧频道封面
+ * @param channelId 番剧id
+ * @return
+ */
+suspend fun downloadThumbnail(channelId:String){
+    httpClient.get<ByteArray>(getThumbnail(CHANNEL_PREFIX + channelId)).apply {
+        FileOutputStream(File("${Anisub.dataFolder.absolutePath}/thumbnail/${channelId}.jpg")).write(this)
+    }
 }

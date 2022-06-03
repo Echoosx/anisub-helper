@@ -2,17 +2,28 @@ package org.echoosx.mirai.plugin.command
 
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CompositeCommand
+import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.buildMessageChain
+import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import org.echoosx.mirai.plugin.Anisub
-import org.echoosx.mirai.plugin.data.SubscribeRecord
-import util.getLatestChapter
+import org.echoosx.mirai.plugin.Anisub.dataFolder
 import org.echoosx.mirai.plugin.AnisubConfig.rssPrefix
 import org.echoosx.mirai.plugin.data.AnisubSubscribe.record
+import org.echoosx.mirai.plugin.data.SubscribeRecord
 import org.echoosx.mirai.plugin.util.StringCompareUtil
-import util.Bangumi
+import util.*
+import java.io.File
 import java.math.BigDecimal
+import kotlin.collections.arrayListOf
+import kotlin.collections.forEach
+import kotlin.collections.joinToString
+import kotlin.collections.mutableListOf
+import kotlin.collections.reverse
+import kotlin.collections.set
+import kotlin.collections.sortByDescending
 
 object SubscribeManage:CompositeCommand(
     Anisub,
@@ -45,6 +56,7 @@ object SubscribeManage:CompositeCommand(
                 subscribe.chapterList.add(bangumi.chapterLink!!)
                 subscribe.contacts = arrayListOf(group.id)
                 record[channelId] = subscribe
+                downloadThumbnail(channelId)
             }
 
             sendMessage("成功在群【${group.id}】中订阅番剧【${bangumi.bangumiTitle}】")
@@ -92,7 +104,7 @@ object SubscribeManage:CompositeCommand(
             val message = buildMessageChain {
                 appendLine("番剧订阅列表:")
                 val tempList = mutableListOf<String>()
-                record.forEach() {
+                record.forEach{
                     if (it.value.contacts.contains(group.id)) {
                         var update = ""
                         if(it.value.updateTime!="")
@@ -101,7 +113,7 @@ object SubscribeManage:CompositeCommand(
                     }
                 }
                 tempList.reverse()
-                tempList.forEach() {
+                tempList.forEach{
                     appendLine(it)
                 }
             }
@@ -126,7 +138,7 @@ object SubscribeManage:CompositeCommand(
             val regex = "^[0-9]{8}$".toRegex()
             if(regex.matches(channelOrKeyword)){
                 val bangumi = getLatestChapter(rssPrefix + channelOrKeyword)
-                sendMessage(latestChapterMessage(bangumi,channelOrKeyword))
+                sendMessage(latestChapterMessage(bangumi,channelOrKeyword,subject!!))
                 return
             }else {
 
@@ -134,7 +146,8 @@ object SubscribeManage:CompositeCommand(
                 val matchList = mutableListOf<MatchBangumi>()
 
                 record.forEach {
-                    val coincidence = StringCompareUtil.coincidenceRate(it.value.name.trim(),channelOrKeyword.trim(),Math.min(it.value.name.trim().length,channelOrKeyword.trim().length))
+                    val coincidence = StringCompareUtil.coincidenceRate(it.value.name.trim(),channelOrKeyword.trim(),
+                        it.value.name.trim().length.coerceAtMost(channelOrKeyword.trim().length))
                     if (coincidence > 0.5) {
                         matchList.add(MatchBangumi(it.key,coincidence))
                     }
@@ -145,7 +158,7 @@ object SubscribeManage:CompositeCommand(
                 }else if(matchList.size == 1){
                     val channelId = matchList[0].channelId
                     val bangumi = getLatestChapter(rssPrefix + channelId)
-                    sendMessage(latestChapterMessage(bangumi,channelId))
+                    sendMessage(latestChapterMessage(bangumi,channelId,subject!!))
                 }else{
                     matchList.sortByDescending { MatchBangumi->MatchBangumi.coincidence }
 
@@ -163,7 +176,7 @@ object SubscribeManage:CompositeCommand(
                         if(BigDecimal(matchList[1].coincidence) != BigDecimal(1.0)){
                             val channelId = matchList[0].channelId
                             val bangumi = getLatestChapter(rssPrefix + channelId)
-                            sendMessage(latestChapterMessage(bangumi,channelId))
+                            sendMessage(latestChapterMessage(bangumi,channelId,subject!!))
                         }
                         else{
                             // 存在多个完全匹配项
@@ -192,9 +205,16 @@ object SubscribeManage:CompositeCommand(
      * @param channelId 频道id
      * @return 格式化消息
      */
-    private fun latestChapterMessage(bangumi: Bangumi,channelId:String):MessageChain{
+    private suspend fun latestChapterMessage(bangumi: Bangumi, channelId:String, contact:Contact):MessageChain{
         val message = buildMessageChain {
-            appendLine("《${bangumi.bangumiTitle}》:")
+            val thumbnail = File("${dataFolder.absolutePath}/thumbnail/${channelId}.jpg")
+            if(!thumbnail.exists()){
+                downloadThumbnail(channelId)
+            }
+            contact.uploadImage(thumbnail.toExternalResource()).imageId.apply {
+                append(Image(this))
+            }
+            appendLine("《${bangumi.bangumiTitle}》")
             appendLine("最新话：${bangumi.chapterTitle}")
             if(bangumi.chapterDesc != null)
                 appendLine("简介：${bangumi.chapterDesc}")
