@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "org.echoosx"
-version = "0.2.0"
+version = "1.0.0"
 
 repositories {
     maven("https://maven.aliyun.com/repository/public") // 阿里云国内代理仓库

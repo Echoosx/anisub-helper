@@ -17,7 +17,7 @@ object Anisub : KotlinPlugin(
     JvmPluginDescription(
         id = "org.echoosx.mirai.plugin.anisub-helper",
         name = "anisub-helper",
-        version = "0.2.0"
+        version = "1.0.0"
     ) {
         author("Echoosx")
     }

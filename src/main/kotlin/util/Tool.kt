@@ -117,9 +117,8 @@ fun getXml(rssUrl: String,debug:Boolean = false): Document {
  * @return true更新 false未更新
  */
 fun checkUpdate(rssUrl: String, record:SubscribeRecord):Boolean{
-    val document = getXml(rssUrl)
-    val newLink = document.selectSingleNode("//channel/item/link").text
-    return newLink !in record.chapterList
+    val bangumi = getLatestChapter(rssUrl)
+    return bangumi.chapterLink !in record.chapterList
 }
 
 

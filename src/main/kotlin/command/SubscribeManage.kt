@@ -303,7 +303,7 @@ object SubscribeManage:CompositeCommand(
             appendLine("最新话：${bangumi.chapterTitle}")
             if(bangumi.chapterDesc != null)
                 appendLine("简介：${bangumi.chapterDesc}")
-            if(record[channelId]?.updateTime != "")
+            if(record[channelId]?.updateTime != null)
                 appendLine("更新时间：${record[channelId]?.updateTime}")
             append("链接：${bangumi.chapterLink}")
         }
