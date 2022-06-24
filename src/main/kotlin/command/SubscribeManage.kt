@@ -258,6 +258,7 @@ object SubscribeManage:CompositeCommand(
                             for(info in channel.channelInfo){
                                 append("\n${info.first}${info.second}")
                             }
+                            append("番剧链接：https://www.agemys.com/detail/${channel.channelId}")
                         })
                     }
                 }
